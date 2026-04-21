@@ -22,7 +22,7 @@ Sanity Studio v5 plugin — trigger and monitor Vercel deployments directly from
 ## Installation
 
 ```bash
-npm install deploy-vercel-from-sanity
+npm install @liiift-studio/deploy-vercel-from-sanity
 ```
 
 ---
@@ -34,7 +34,7 @@ npm install deploy-vercel-from-sanity
 ```ts
 // sanity.config.ts
 import { defineConfig } from 'sanity'
-import { vercelDeploy } from 'deploy-vercel-from-sanity'
+import { vercelDeploy } from '@liiift-studio/deploy-vercel-from-sanity'
 
 export default defineConfig({
   // ...

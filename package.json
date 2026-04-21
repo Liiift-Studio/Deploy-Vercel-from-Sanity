@@ -1,6 +1,6 @@
 {
-  "name": "deploy-vercel-from-sanity",
-  "version": "0.1.0",
+  "name": "@liiift-studio/deploy-vercel-from-sanity",
+  "version": "0.1.1",
   "description": "Sanity Studio v5 plugin — trigger and monitor Vercel deployments with full status, history, and build logs",
   "license": "MIT",
   "author": "Liiift Studio",
@@ -37,6 +37,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/liiift-studio/deploy-vercel-from-sanity"
+    "url": "https://github.com/Liiift-Studio/Deploy-Vercel-from-Sanity"
   }
 }
