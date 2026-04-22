@@ -15,7 +15,7 @@ export function StatusBadge({ state, showSpinner }: StatusBadgeProps) {
 	return (
 		<Flex align="center" gap={2}>
 			{spinning && <Spinner muted />}
-			<Badge tone={tone} mode="outline">
+			<Badge tone={tone} padding={2}>
 				{label}
 			</Badge>
 		</Flex>

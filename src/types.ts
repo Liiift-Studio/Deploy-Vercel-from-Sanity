@@ -45,9 +45,17 @@ export interface VercelDeployment {
 	}
 }
 
-/** Vercel secrets document stored at _id: 'secrets.vercelDeploy' */
-export interface VercelSecrets {
-	_id: 'secrets.vercelDeploy'
+/** A single build event returned by GET /v2/deployments/{id}/events */
+export interface DeploymentEvent {
+	type: 'command' | 'stdout' | 'stderr' | 'exit' | 'deployment-state'
+	text?: string
+	created: number
+	payload?: Record<string, unknown>
+}
+
+/** Vercel config document stored at _id: 'config.vercelDeploy' — readable by all authenticated users */
+export interface VercelConfig {
+	_id: 'config.vercelDeploy'
 	_type: 'vercelDeploy.config'
 	accessToken: string
 }

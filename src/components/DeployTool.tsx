@@ -2,26 +2,30 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useClient } from 'sanity'
 import {
-	Card, Box, Stack, Flex, Text, Heading, Spinner, Button, Dialog, useToast,
+	Card, Box, Stack, Flex, Text, Heading, Spinner, Button, Badge, Dialog, useToast,
 } from '@sanity/ui'
-import { RocketIcon, KeyIcon, TrashIcon, WarningOutlineIcon } from '@sanity/icons'
+import { TokenIcon, TrashIcon, WarningOutlineIcon, AddIcon } from '@sanity/icons'
 import { DeployItem } from './DeployItem'
 import { TokenSetup } from './TokenSetup'
+import { DeployTargetForm } from './DeployTargetForm'
+import { VERSION } from '../version'
 import type { DeployTarget } from '../types'
 
-const TOKEN_QUERY = `*[_id == "secrets.vercelDeploy"][0].accessToken`
+const TOKEN_QUERY   = `*[_id == "config.vercelDeploy"][0].accessToken`
 const TARGETS_QUERY = `*[_type == "vercel_deploy"] | order(_createdAt asc)`
 
 export function DeployTool() {
 	const client = useClient({ apiVersion: '2025-01-01' })
-	const toast = useToast()
+	const toast  = useToast()
 
-	const [token, setToken] = useState<string | null>(null)
-	const [targets, setTargets] = useState<DeployTarget[]>([])
-	const [loading, setLoading] = useState(true)
+	const [token, setToken]                   = useState<string | null>(null)
+	const [targets, setTargets]               = useState<DeployTarget[]>([])
+	const [loading, setLoading]               = useState(true)
 	const [showTokenSetup, setShowTokenSetup] = useState(false)
-	const [pendingDelete, setPendingDelete] = useState<DeployTarget | null>(null)
-	const [deleting, setDeleting] = useState(false)
+	const [showCreateForm, setShowCreateForm] = useState(false)
+	const [pendingEdit, setPendingEdit]       = useState<DeployTarget | null>(null)
+	const [pendingDelete, setPendingDelete]   = useState<DeployTarget | null>(null)
+	const [deleting, setDeleting]             = useState(false)
 
 	// ── Fetch token + targets ─────────────────────────────────────────────────
 	const load = useCallback(async () => {
@@ -81,64 +85,154 @@ export function DeployTool() {
 		)
 	}
 
-	if (!token && !showTokenSetup) {
-		return <TokenSetup onSaved={() => { setShowTokenSetup(false); load() }} />
-	}
-
-	if (showTokenSetup) {
-		return (
-			<TokenSetup
-				onSaved={() => {
-					setShowTokenSetup(false)
-					load()
-				}}
-			/>
-		)
-	}
-
 	return (
 		<Card height="fill" tone="transparent">
 			<Box padding={5}>
 				<Stack space={5}>
+
 					{/* ── Header ──────────────────────────────────────────────── */}
 					<Flex align="center" justify="space-between">
+						<Heading size={2}>Deploy with Vercel</Heading>
 						<Flex align="center" gap={3}>
-							<RocketIcon />
-							<Heading size={2}>Deploy</Heading>
+							{token ? (
+								<>
+									<Badge tone="positive">Connected</Badge>
+									<Button
+										text="Change Token"
+										mode="ghost"
+										icon={TokenIcon}
+										fontSize={1}
+										onClick={() => setShowTokenSetup(true)}
+										style={{ cursor: 'pointer' }}
+									/>
+								</>
+							) : (
+								<Button
+									text="Connect API token"
+									mode="ghost"
+									icon={TokenIcon}
+									fontSize={1}
+									tone="caution"
+									onClick={() => setShowTokenSetup(true)}
+									style={{ cursor: 'pointer' }}
+								/>
+							)}
+							<Button
+								text="Add target"
+								mode="ghost"
+								icon={AddIcon}
+								fontSize={1}
+								onClick={() => setShowCreateForm(true)}
+								style={{ cursor: 'pointer' }}
+							/>
 						</Flex>
-						<Button
-							text="API Token"
-							mode="ghost"
-							icon={KeyIcon}
-							fontSize={1}
-							onClick={() => setShowTokenSetup(true)}
-						/>
 					</Flex>
+
+					{/* ── No-token upgrade banner ──────────────────────────────── */}
+					{!token && (
+						<Card padding={4} radius={2} tone="caution" shadow={1}>
+							<Flex align="center" justify="space-between" gap={4}>
+								<Stack space={2}>
+									<Text size={1} weight="semibold">Deploy status is not connected</Text>
+									<Text size={1} muted>
+										You can trigger deploys now. Connect a Vercel API token to also see
+										deployment status, build logs, history, and commit metadata.
+									</Text>
+								</Stack>
+								<Button
+									text="Connect"
+									tone="caution"
+									fontSize={1}
+									onClick={() => setShowTokenSetup(true)}
+									style={{ cursor: 'pointer', flexShrink: 0 }}
+								/>
+							</Flex>
+						</Card>
+					)}
 
 					{/* ── No targets ──────────────────────────────────────────── */}
 					{targets.length === 0 && (
 						<Card padding={5} radius={2} tone="transparent" shadow={1}>
-							<Stack space={3} style={{ textAlign: 'center' }}>
+							<Stack space={4} style={{ textAlign: 'center' }}>
 								<Text size={2} weight="semibold">No deploy targets configured</Text>
 								<Text size={1} muted>
-									Create a <code>vercel_deploy</code> document in the dataset with a Vercel deploy
-									hook URL, or add one via the Sanity CLI.
+									Add a deploy target using the button above, or create a{' '}
+									<code>vercel_deploy</code> document directly in the dataset.
 								</Text>
+								<Flex justify="center">
+									<Button
+										text="Add deploy target"
+										tone="primary"
+										icon={AddIcon}
+										onClick={() => setShowCreateForm(true)}
+										style={{ cursor: 'pointer' }}
+									/>
+								</Flex>
 							</Stack>
 						</Card>
 					)}
 
-					{/* ── Deploy targets ──────────────────────────────────────── */}
-					{token && targets.map(target => (
-						<DeployItem
-							key={target._id}
-							target={target}
-							token={token}
-							onDelete={setPendingDelete}
-						/>
-					))}
+					{/* ── Deploy targets — responsive 2-col grid ──────────────── */}
+					{targets.length > 0 && (
+						<div style={{
+							display: 'grid',
+							gridTemplateColumns: 'repeat(auto-fill, minmax(540px, 1fr))',
+							gap: '16px',
+							alignItems: 'start',
+						}}>
+							{targets.map(target => (
+								<DeployItem
+									key={target._id}
+									target={target}
+									token={token ?? ''}
+									onDelete={setPendingDelete}
+									onEdit={setPendingEdit}
+								/>
+							))}
+						</div>
+					)}
+
 				</Stack>
 			</Box>
+
+			{/* ── Version watermark ──────────────────────────────────────────── */}
+			<Box
+				style={{
+					position: 'fixed',
+					bottom: 12,
+					right: 16,
+					opacity: 0.25,
+					pointerEvents: 'none',
+					userSelect: 'none',
+				}}
+			>
+				<Text size={0} muted>v{VERSION}</Text>
+			</Box>
+
+			{/* ── Token setup dialog ──────────────────────────────────────────── */}
+			{showTokenSetup && (
+				<TokenSetup
+					onSaved={() => { setShowTokenSetup(false); load() }}
+					onCancel={token ? () => setShowTokenSetup(false) : undefined}
+				/>
+			)}
+
+			{/* ── Create form ─────────────────────────────────────────────────── */}
+			{showCreateForm && (
+				<DeployTargetForm
+					onSaved={() => { setShowCreateForm(false); toast.push({ status: 'success', title: 'Deploy target added' }) }}
+					onClose={() => setShowCreateForm(false)}
+				/>
+			)}
+
+			{/* ── Edit form ───────────────────────────────────────────────────── */}
+			{pendingEdit && (
+				<DeployTargetForm
+					initial={pendingEdit}
+					onSaved={() => { setPendingEdit(null); toast.push({ status: 'success', title: 'Deploy target updated' }) }}
+					onClose={() => setPendingEdit(null)}
+				/>
+			)}
 
 			{/* ── Delete confirmation ─────────────────────────────────────────── */}
 			{pendingDelete && (
@@ -153,6 +247,7 @@ export function DeployTool() {
 								text="Cancel"
 								mode="ghost"
 								onClick={() => setPendingDelete(null)}
+								style={{ cursor: 'pointer' }}
 							/>
 							<Button
 								text="Delete"
@@ -161,6 +256,7 @@ export function DeployTool() {
 								loading={deleting}
 								disabled={deleting}
 								onClick={confirmDelete}
+								style={{ cursor: 'pointer' }}
 							/>
 						</Flex>
 					}
@@ -172,8 +268,8 @@ export function DeployTool() {
 								<Text size={2} weight="semibold">{pendingDelete.name}</Text>
 							</Flex>
 							<Text size={1} muted>
-								This removes the deploy target from the dataset. The Vercel deploy hook itself is
-								not affected.
+								This removes the deploy target from the dataset. The Vercel deploy hook
+								itself is not affected.
 							</Text>
 						</Stack>
 					</Box>

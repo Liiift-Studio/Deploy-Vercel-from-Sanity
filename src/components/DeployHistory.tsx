@@ -109,7 +109,7 @@ export function DeployHistory({ target, token, onClose }: DeployHistoryProps) {
 
 										{/* Status */}
 										<Box flex={1}>
-											<Badge tone={tone} mode="outline">{label}</Badge>
+											<Badge tone={tone}>{label}</Badge>
 										</Box>
 
 										{/* Branch + commit */}

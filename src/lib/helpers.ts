@@ -74,13 +74,30 @@ export function stateLabel(state: VercelDeployState | undefined): {
 	tone: 'positive' | 'caution' | 'critical' | 'default'
 } {
 	switch (state) {
-		case 'READY':       return { label: 'Ready',        tone: 'positive' }
-		case 'BUILDING':    return { label: 'Building',     tone: 'caution' }
-		case 'QUEUED':      return { label: 'Queued',       tone: 'caution' }
-		case 'INITIALIZING':return { label: 'Initializing', tone: 'caution' }
-		case 'ERROR':       return { label: 'Error',        tone: 'critical' }
-		case 'CANCELED':    return { label: 'Canceled',     tone: 'default' }
-		case 'LOADING':     return { label: 'Loading…',     tone: 'default' }
-		default:            return { label: 'Unknown',      tone: 'default' }
+		case 'READY':        return { label: 'Ready',        tone: 'positive' }
+		case 'BUILDING':     return { label: 'Building',     tone: 'caution' }
+		case 'QUEUED':       return { label: 'Queued',       tone: 'caution' }
+		case 'INITIALIZING': return { label: 'Initializing', tone: 'caution' }
+		case 'ERROR':        return { label: 'Error',        tone: 'critical' }
+		case 'CANCELED':     return { label: 'Canceled',     tone: 'default' }
+		case 'LOADING':      return { label: 'Loading…',     tone: 'default' }
+		default:             return { label: 'Unknown',      tone: 'default' }
+	}
+}
+
+/**
+ * Extracts the Vercel project dashboard URL from a deployment's inspectorUrl.
+ * inspectorUrl format: https://vercel.com/{team}/{project}/{deploymentId}
+ * Returns https://vercel.com/{team}/{project} or null if unparseable.
+ */
+export function projectHref(inspectorUrl: string | undefined): string | null {
+	if (!inspectorUrl) return null
+	try {
+		const { origin, pathname } = new URL(inspectorUrl)
+		const parts = pathname.split('/').filter(Boolean)
+		if (parts.length < 2) return null
+		return `${origin}/${parts[0]}/${parts[1]}`
+	} catch {
+		return null
 	}
 }

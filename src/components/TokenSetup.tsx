@@ -1,19 +1,19 @@
-// Vercel API token setup — stores token in secrets.vercelDeploy Sanity document
+// Vercel API token form — rendered inside a Dialog by DeployTool
 import { useState, useCallback } from 'react'
 import { useClient } from 'sanity'
-import {
-	Card, Box, Stack, Text, Heading, TextInput, Button, Flex,
-} from '@sanity/ui'
-import { KeyIcon, CheckmarkCircleIcon } from '@sanity/icons'
+import { Stack, Text, TextInput, Button, Card, Dialog, Flex } from '@sanity/ui'
+import { CheckmarkCircleIcon } from '@sanity/icons'
 
 interface TokenSetupProps {
 	/** Called after the token is successfully saved */
 	onSaved: () => void
+	/** Called when the user dismisses — only available when a token already exists */
+	onCancel?: () => void
 }
 
-const TOKEN_DOC_ID = 'secrets.vercelDeploy'
+const TOKEN_DOC_ID = 'config.vercelDeploy'
 
-export function TokenSetup({ onSaved }: TokenSetupProps) {
+export function TokenSetup({ onSaved, onCancel }: TokenSetupProps) {
 	const client = useClient({ apiVersion: '2025-01-01' })
 	const [token, setToken] = useState('')
 	const [saving, setSaving] = useState(false)
@@ -38,55 +38,58 @@ export function TokenSetup({ onSaved }: TokenSetupProps) {
 	}, [client, token, onSaved])
 
 	return (
-		<Card height="fill" tone="transparent">
-			<Flex align="center" justify="center" height="fill" padding={6}>
-				<Card padding={5} radius={3} shadow={1} style={{ maxWidth: 480, width: '100%' }}>
-					<Stack space={5}>
-						<Flex align="center" gap={3}>
-							<Text size={3}><KeyIcon /></Text>
-							<Heading size={2}>Connect to Vercel</Heading>
-						</Flex>
+		<Dialog
+			header="Connect Vercel API token"
+			id="token-setup"
+			onClose={onCancel}
+			width={1}
+			footer={
+				<Flex padding={3} gap={2} justify="flex-end">
+					{onCancel && (
+						<Button text="Cancel" mode="ghost" onClick={onCancel} style={{ cursor: 'pointer' }} />
+					)}
+					<Button
+						text="Save and connect"
+						tone="primary"
+						icon={CheckmarkCircleIcon}
+						loading={saving}
+						disabled={!token.trim() || saving}
+						onClick={save}
+						style={{ cursor: 'pointer' }}
+					/>
+				</Flex>
+			}
+		>
+			<Stack space={4} padding={4}>
+				<Stack space={3}>
+					<Text size={1} muted>
+						A Vercel API token lets this tool read deployment status, history, build logs,
+						and branch metadata. Without it you can still trigger deploys — you just won't
+						see any feedback.
+					</Text>
+					<Text size={1} muted>
+						Create one at <strong>vercel.com → Settings → Tokens</strong> with{' '}
+						<strong>Full Account</strong> scope. The token is stored in your Sanity dataset
+						and shared across all authenticated studio users.
+					</Text>
+				</Stack>
 
-						<Stack space={3}>
-							<Text size={1} muted>
-								A Vercel API token is required to read deployment status, history, and build logs.
-								Your token is stored securely in the Sanity dataset under a{' '}
-								<code>secrets.*</code> document ID that is not publicly readable.
-							</Text>
-							<Text size={1} muted>
-								Create a token at{' '}
-								<strong>vercel.com → Settings → Tokens</strong>.
-								Choose <strong>Full Account</strong> scope.
-							</Text>
-						</Stack>
+				<Stack space={2}>
+					<Text size={1} weight="semibold">Vercel API Token</Text>
+					<TextInput
+						value={token}
+						onChange={e => setToken((e.target as HTMLInputElement).value)}
+						placeholder="xxxxxxxxxxxxxxxxxxxxxxxx"
+						type="password"
+					/>
+				</Stack>
 
-						<Stack space={3}>
-							<Text size={1} weight="semibold">Vercel API Token</Text>
-							<TextInput
-								value={token}
-								onChange={e => setToken((e.target as HTMLInputElement).value)}
-								placeholder="xxxxxxxxxxxxxxxxxxxxxxxx"
-								type="password"
-							/>
-						</Stack>
-
-						{error && (
-							<Card tone="critical" padding={3} radius={2}>
-								<Text size={1}>{error}</Text>
-							</Card>
-						)}
-
-						<Button
-							text="Save and connect"
-							tone="primary"
-							icon={CheckmarkCircleIcon}
-							loading={saving}
-							disabled={!token.trim() || saving}
-							onClick={save}
-						/>
-					</Stack>
-				</Card>
-			</Flex>
-		</Card>
+				{error && (
+					<Card tone="critical" padding={3} radius={2}>
+						<Text size={1}>{error}</Text>
+					</Card>
+				)}
+			</Stack>
+		</Dialog>
 	)
 }

@@ -1,7 +1,10 @@
 // Vercel REST API helpers — all calls require a bearer token
-import type { VercelDeployment } from '../types'
+import type { VercelDeployment, DeploymentEvent } from '../types'
 
 const BASE = 'https://api.vercel.com'
+
+/** Only allow genuine Vercel deploy hook URLs through triggerDeploy */
+const VERCEL_HOOK_RE = /^https:\/\/api\.vercel\.com\/v1\/integrations\/deploy\//
 
 async function vercelFetch<T>(path: string, token: string, init?: RequestInit): Promise<T> {
 	const res = await fetch(`${BASE}${path}`, {
@@ -52,8 +55,36 @@ export async function cancelDeployment(opts: {
 	})
 }
 
-/** Trigger a deploy by POSTing to the hook URL — no auth needed */
+/**
+ * Trigger a deploy by POSTing to the hook URL.
+ * Validates the URL is a genuine Vercel hook before calling to prevent
+ * SSRF if a document is tampered with outside the Studio schema.
+ */
 export async function triggerDeploy(hookUrl: string): Promise<void> {
+	if (!VERCEL_HOOK_RE.test(hookUrl)) {
+		throw new Error('Invalid deploy hook URL — must be a Vercel hook (api.vercel.com/v1/integrations/deploy/…)')
+	}
 	const res = await fetch(hookUrl, { method: 'POST' })
 	if (!res.ok) throw new Error(`Deploy hook returned ${res.status}`)
+}
+
+/**
+ * Fetch build events for a deployment.
+ * Returns up to 100 events in reverse chronological order,
+ * filtered to lines with actual text content.
+ */
+export async function getDeploymentEvents(opts: {
+	deploymentId: string
+	token: string
+	teamId?: string
+}): Promise<DeploymentEvent[]> {
+	const params = new URLSearchParams({ limit: '100', direction: 'backward' })
+	if (opts.teamId) params.set('teamId', opts.teamId)
+	// API returns either a plain array or a wrapped object depending on version
+	const raw = await vercelFetch<DeploymentEvent[] | { events?: DeploymentEvent[] }>(
+		`/v2/deployments/${opts.deploymentId}/events?${params}`,
+		opts.token,
+	)
+	const events: DeploymentEvent[] = Array.isArray(raw) ? raw : (raw.events ?? [])
+	return events.filter(e => e.text?.trim())
 }
