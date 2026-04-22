@@ -431,7 +431,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 								fontSize={0}
 								padding={3}
 								onClick={() => setShowDetails(v => !v)}
-								style={{ width: '100%', justifyContent: 'space-between', borderRadius: 0, cursor: 'pointer' }}
+								style={{ width: '100%', justifyContent: 'flex-start', borderRadius: 0, cursor: 'pointer' }}
 							/>
 							{showDetails && (
 								<Card tone="primary" padding={3} style={{ borderRadius: 0 }}>
