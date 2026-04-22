@@ -1,21 +1,28 @@
 # deploy-vercel-from-sanity
 
-A [Sanity Studio](https://www.sanity.io) plugin to trigger, monitor, and manage Vercel deployments — without leaving your studio.
+**Trigger and monitor Vercel deployments directly from [Sanity Studio](https://www.sanity.io) — no context switching required.**
 
-![Deploy tool screenshot](./docs/screenshot.png)
+[![npm version](https://img.shields.io/npm/v/@liiift-studio/deploy-vercel-from-sanity)](https://www.npmjs.com/package/@liiift-studio/deploy-vercel-from-sanity)
+[![Sanity v3/v4/v5](https://img.shields.io/badge/sanity-v3%20%7C%20v4%20%7C%20v5-f03e2f)](https://www.sanity.io)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+
+![Deploy with Vercel — Production and Preview targets with live status](./docs/screenshot.png)
+
+---
 
 ## Features
 
-- **Trigger deployments** via Vercel deploy hooks
+- **One-click deploy** — trigger Production or Preview builds from inside Sanity Studio
 - **Live status** with automatic polling — Queued → Building → Ready / Error
-- **Build timer** showing elapsed time while a deploy is running
+- **Build timer** showing elapsed time while a deploy is in progress
 - **Cancel** in-progress deployments
 - **Copy deployment URL** with one click
-- **Inline error log viewer** — see build errors directly in the card without going to Vercel
+- **Inline error log viewer** — see build errors without leaving the studio
 - **Deployment history** per target
-- **"Open in Vercel"** link to the project dashboard
+- **"Open in Vercel"** link to your project dashboard
+- **Multiple targets** — configure Production, Preview, and any number of custom environments
+- **Shared API token** — set it once; all authenticated studio users with editor access or above can deploy
 - **Responsive grid layout** — 2 columns on desktop, 1 on mobile
-- **Shared API token** — set it once, works for all studio users with editor access or above
 
 ---
 
@@ -27,7 +34,7 @@ npm install @liiift-studio/deploy-vercel-from-sanity
 
 ---
 
-## Setup
+## Quick start
 
 ### 1. Add the plugin to your Sanity config
 
@@ -39,38 +46,22 @@ import { vercelDeploy } from '@liiift-studio/deploy-vercel-from-sanity'
 export default defineConfig({
   // ...
   plugins: [
-    vercelDeploy(),
-    // or with a custom label / name:
     vercelDeploy({ title: 'Deploy', name: 'vercel-deploy' }),
   ],
 })
 ```
 
-### 2. (Optional) Restrict the tool to editors and above
+### 2. Connect your Vercel API token
 
-By default the tool is visible to all authenticated users. To hide it from viewers:
-
-```ts
-// sanity.config.ts
-tools: (prev, { currentUser }) => {
-  const canDeploy = currentUser?.roles?.some(r =>
-    ['administrator', 'editor'].includes(r.name)
-  )
-  return canDeploy ? prev : prev.filter(t => t.name !== 'vercel-deploy')
-},
-```
-
-### 3. Connect your Vercel API token
-
-Open the **Deploy** tool in Sanity Studio. Enter a Vercel API token when prompted.
+Open the **Deploy** tab in Sanity Studio and enter a Vercel API token when prompted.
 
 To create a token: **vercel.com → Settings → Tokens → Create → Full Account scope**.
 
-The token is stored in a `config.vercelDeploy` document in your dataset and is shared across all authenticated studio users (see [Security](#security)).
+The token is stored in a `config.vercelDeploy` document in your dataset and shared across all authenticated studio users.
 
-### 4. Create deploy targets
+### 3. Add a deploy target
 
-Create one or more `vercel_deploy` documents in your dataset. Each represents a deployment environment (e.g. Production, Staging).
+Create one or more `vercel_deploy` documents — each represents an environment (Production, Preview, etc.).
 
 **Via Sanity CLI:**
 
@@ -87,11 +78,11 @@ EOF
 
 **To get your deploy hook URL:** Vercel Dashboard → Project → Settings → Git → Deploy Hooks → Create Hook.
 
-**Fields on each `vercel_deploy` document:**
+**Available fields on each `vercel_deploy` document:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `name` | `string` | ✓ | Display label shown in the studio |
+| `name` | `string` | ✓ | Display label (e.g. "Production", "Preview") |
 | `url` | `url` | ✓ | Vercel deploy hook URL |
 | `teamId` | `string` | | Vercel team ID — required for team-owned projects |
 | `disableDeleteAction` | `boolean` | | Hides the delete button for this target in the studio UI |
@@ -108,6 +99,22 @@ EOF
 
 ---
 
+## Restrict access to editors and above
+
+By default the Deploy tab is visible to all authenticated users. To hide it from viewers:
+
+```ts
+// sanity.config.ts
+tools: (prev, { currentUser }) => {
+  const canDeploy = currentUser?.roles?.some(r =>
+    ['administrator', 'editor'].includes(r.name)
+  )
+  return canDeploy ? prev : prev.filter(t => t.name !== 'vercel-deploy')
+},
+```
+
+---
+
 ## How it works
 
 1. Deploy targets are stored as `vercel_deploy` documents in your Sanity dataset.
@@ -120,25 +127,13 @@ EOF
 
 ## Security
 
-### API token storage
+**API token storage** — The Vercel API token is stored in a `config.vercelDeploy` Sanity document, readable by all authenticated studio users. Audit who has access to your Sanity project at sanity.io → Project → Members. If your studio includes untrusted editors, consider a server-side proxy that holds the token and exposes only a scoped deploy endpoint.
 
-The Vercel API token is stored in a `config.vercelDeploy` Sanity document, which is readable by **all authenticated studio users**. Anyone with a login to your Sanity project can read the token value via the Sanity API.
+**Deploy hook URL validation** — `triggerDeploy` validates that the hook URL matches `api.vercel.com/v1/integrations/deploy/` before making the request, preventing SSRF from a tampered document.
 
-**Recommendations:**
-- Audit who has access to your Sanity project at sanity.io → Project → Members.
-- If your studio includes untrusted editors, consider a server-side proxy that holds the token outside Sanity and exposes only a scoped deploy endpoint.
+**External links** — All external links use `target="_blank" rel="noreferrer"` and are validated through `safeHref()` before rendering, blocking `javascript:` injection from a compromised API response.
 
-### Deploy hook URL validation
-
-`triggerDeploy` validates that the hook URL matches `api.vercel.com/v1/integrations/deploy/` before making the request. This prevents SSRF if a `vercel_deploy` document is created or modified outside the Studio's schema validation.
-
-### External links
-
-All external links use `target="_blank" rel="noreferrer"` and are validated through `safeHref()` before rendering, blocking `javascript:` injection from a compromised API response.
-
-### GROQ queries
-
-All GROQ queries in this plugin are static strings — no user input is interpolated, so there is no GROQ injection risk.
+**GROQ queries** — All GROQ queries in this plugin are static strings — no user input is interpolated.
 
 ---
 
@@ -146,13 +141,13 @@ All GROQ queries in this plugin are static strings — no user input is interpol
 
 - Sanity Studio v3, v4, or v5
 - React 18 or 19
-- A Vercel account with at least one project configured with a deploy hook
+- A Vercel account with at least one project and a deploy hook configured
 
 ---
 
 ## Contributing
 
-Issues and pull requests are welcome at [github.com/Liiift-Studio/Deploy-Vercel-from-Sanity](https://github.com/Liiift-Studio/Deploy-Vercel-from-Sanity).
+Issues and pull requests welcome at [github.com/Liiift-Studio/Deploy-Vercel-from-Sanity](https://github.com/Liiift-Studio/Deploy-Vercel-from-Sanity).
 
 ---
 

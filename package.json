@@ -7,9 +7,15 @@
   "keywords": [
     "sanity",
     "sanity-plugin",
+    "sanity-studio",
     "vercel",
+    "vercel-deploy",
     "deploy",
-    "deployment"
+    "deployment",
+    "deploy-hook",
+    "ci-cd",
+    "build-trigger",
+    "cms-deploy"
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
