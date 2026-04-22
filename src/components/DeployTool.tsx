@@ -46,6 +46,25 @@ export function DeployTool() {
 
 	useEffect(() => { load() }, [load])
 
+	// Inject responsive styles once on mount
+	useEffect(() => {
+		if (document.getElementById('dvfs-styles')) return
+		const style = document.createElement('style')
+		style.id = 'dvfs-styles'
+		style.textContent = `
+			@media (max-width: 600px) {
+				.dvfs-header { flex-wrap: wrap !important; row-gap: 8px !important; }
+				.dvfs-header-actions { width: 100% !important; flex-wrap: wrap !important; justify-content: flex-start !important; }
+				.dvfs-grid { grid-template-columns: 1fr !important; }
+				.dvfs-card-flex { flex-direction: column !important; }
+				.dvfs-deploy-col { width: 100% !important; align-self: auto !important; }
+				.dvfs-deploy-col button { border-radius: 3px !important; }
+			}
+		`
+		document.head.appendChild(style)
+		return () => { document.getElementById('dvfs-styles')?.remove() }
+	}, [])
+
 	// Live subscription — update targets when documents change
 	useEffect(() => {
 		const sub = client
@@ -91,9 +110,9 @@ export function DeployTool() {
 				<Stack space={5}>
 
 					{/* ── Header ──────────────────────────────────────────────── */}
-					<Flex align="center" justify="space-between">
+					<Flex align="center" justify="space-between" className="dvfs-header">
 						<Heading size={2}>Deploy with Vercel</Heading>
-						<Flex align="center" gap={3}>
+						<Flex align="center" gap={3} className="dvfs-header-actions">
 							{token ? (
 								<>
 									<Badge tone="positive">Connected</Badge>
@@ -174,7 +193,7 @@ export function DeployTool() {
 
 					{/* ── Deploy targets — responsive 2-col grid ──────────────── */}
 					{targets.length > 0 && (
-						<div style={{
+						<div className="dvfs-grid" style={{
 							display: 'grid',
 							gridTemplateColumns: 'repeat(auto-fill, minmax(540px, 1fr))',
 							gap: '16px',

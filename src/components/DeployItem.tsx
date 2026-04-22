@@ -169,7 +169,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 	return (
 		<>
 			<Card radius={2} shadow={1} tone="default">
-				<Flex align="stretch">
+				<Flex align="stretch" className="dvfs-card-flex">
 
 					{/* ── Left: info column ──────────────────────────────────── */}
 					<Flex direction="column" flex={1} style={{ minWidth: 0 }}>
@@ -508,6 +508,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 					<Flex
 						direction="column"
 						gap={2}
+						className="dvfs-deploy-col"
 						style={{ flexShrink: 0, alignSelf: 'stretch' }}
 					>
 						{isActiveState(latest?.state) && (
