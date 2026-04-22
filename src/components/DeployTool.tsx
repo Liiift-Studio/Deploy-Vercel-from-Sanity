@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useClient } from 'sanity'
 import {
-	Card, Box, Stack, Flex, Text, Heading, Spinner, Button, Badge, Dialog, useToast,
+	Card, Box, Stack, Flex, Text, Heading, Spinner, Button, Dialog, useToast,
 } from '@sanity/ui'
 import { TokenIcon, TrashIcon, WarningOutlineIcon, AddIcon } from '@sanity/icons'
 import { DeployItem } from './DeployItem'
@@ -113,29 +113,15 @@ export function DeployTool() {
 					<Flex align="center" justify="space-between" className="dvfs-header">
 						<Heading size={2}>Deploy with Vercel</Heading>
 						<Flex align="center" gap={3} className="dvfs-header-actions">
-							{token ? (
-								<>
-									<Badge tone="positive">Connected</Badge>
-									<Button
-										text="Change Token"
-										mode="ghost"
-										icon={TokenIcon}
-										fontSize={1}
-										onClick={() => setShowTokenSetup(true)}
-										style={{ cursor: 'pointer' }}
-									/>
-								</>
-							) : (
-								<Button
-									text="Connect API token"
-									mode="ghost"
-									icon={TokenIcon}
-									fontSize={1}
-									tone="caution"
-									onClick={() => setShowTokenSetup(true)}
-									style={{ cursor: 'pointer' }}
-								/>
-							)}
+							<Button
+								text={token ? 'Token connected' : 'Connect API token'}
+								mode="ghost"
+								icon={TokenIcon}
+								fontSize={1}
+								tone={token ? 'positive' : 'caution'}
+								onClick={() => setShowTokenSetup(true)}
+								style={{ cursor: 'pointer' }}
+							/>
 							<Button
 								text="Add target"
 								mode="ghost"
