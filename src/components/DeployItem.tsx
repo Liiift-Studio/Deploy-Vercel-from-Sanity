@@ -200,9 +200,20 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 											) : (
 												<StatusBadge state={latest?.state} showSpinner />
 											)}
+											{isActiveState(latest?.state) && (
+												<Button
+													text="Cancel"
+													mode="ghost"
+													tone="critical"
+													loading={canceling}
+													disabled={canceling}
+													onClick={cancel}
+													style={{ cursor: 'pointer' }}
+												/>
+											)}
 											{isActive && elapsed > 0 ? (
 												<Flex align="center" gap={1}>
-													<ClockIcon />
+													<Spinner muted />
 													<Text size={1} muted>{formatDuration(elapsed)}</Text>
 												</Flex>
 											) : (!isActive && deployedAt) ? (
@@ -511,17 +522,6 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 						className="dvfs-deploy-col"
 						style={{ flexShrink: 0, alignSelf: 'stretch' }}
 					>
-						{isActiveState(latest?.state) && (
-							<Button
-								text="Cancel"
-								mode="ghost"
-								tone="critical"
-								loading={canceling}
-								disabled={canceling}
-								onClick={cancel}
-								style={{ cursor: 'pointer' }}
-							/>
-						)}
 						<Button
 							text="Deploy"
 							tone="primary"
