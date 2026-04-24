@@ -52,13 +52,20 @@ export function DeployTool() {
 		const style = document.createElement('style')
 		style.id = 'dvfs-styles'
 		style.textContent = `
-			@media (max-width: 600px) {
+			@media (max-width: 768px) {
 				.dvfs-header { flex-wrap: wrap !important; row-gap: 8px !important; }
 				.dvfs-header-actions { width: 100% !important; flex-wrap: wrap !important; justify-content: flex-start !important; }
 				.dvfs-grid { grid-template-columns: 1fr !important; }
 				.dvfs-card-flex { flex-direction: column !important; }
 				.dvfs-deploy-col { width: 100% !important; align-self: auto !important; }
 				.dvfs-deploy-col button { border-radius: 3px !important; }
+			}
+			@keyframes dvfs-open {
+				from { opacity: 0; transform: translateY(-4px); }
+				to   { opacity: 1; transform: translateY(0); }
+			}
+			.dvfs-accordion-content {
+				animation: dvfs-open 0.15s ease-out;
 			}
 		`
 		document.head.appendChild(style)
@@ -181,7 +188,7 @@ export function DeployTool() {
 					{targets.length > 0 && (
 						<div className="dvfs-grid" style={{
 							display: 'grid',
-							gridTemplateColumns: 'repeat(auto-fill, minmax(540px, 1fr))',
+							gridTemplateColumns: 'repeat(auto-fill, minmax(min(540px, 100%), 1fr))',
 							gap: '16px',
 							alignItems: 'start',
 						}}>

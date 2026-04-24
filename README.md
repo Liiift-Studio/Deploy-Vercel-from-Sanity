@@ -16,7 +16,9 @@
 - **Live status** with automatic polling — Queued → Building → Ready / Error
 - **Build timer** showing elapsed time while a deploy is in progress
 - **Cancel** in-progress deployments
+- **Deploy-complete notifications** — Studio toast when a build finishes, errors, or is canceled
 - **Copy deployment URL** with one click
+- **GitHub commit links** — commit SHA links directly to the GitHub commit when repo metadata is available
 - **Inline error log viewer** — see build errors without leaving the studio
 - **Deployment history** per target
 - **"Open in Vercel"** link to your project dashboard
@@ -122,6 +124,41 @@ tools: (prev, { currentUser }) => {
 3. While a deployment is active (Queued / Initializing / Building), it polls every 5 seconds.
 4. Clicking **Deploy** POSTs to the hook URL — Vercel queues a new build.
 5. If a deploy fails, clicking **Show error details** fetches the last 30 build log lines from the Vercel API inline.
+6. A Studio toast notification fires when a deployment completes (Ready, Error, or Canceled).
+
+> **Polling and rate limits** — Active deployments are polled every 5 seconds per target. With many simultaneous active deploys, API call volume adds up. Vercel's rate limit is generous for normal use, but studios with a large number of targets triggering concurrently may hit `429` errors. The plugin surfaces these with a clear message.
+
+---
+
+## Troubleshooting
+
+### "Token is invalid or expired"
+
+Your Vercel API token has been revoked or expired. Go to **Vercel → Settings → Tokens**, create a new token with **Full Account** scope, and reconnect it in the Deploy tab (top-right → *Token connected* button).
+
+### "Token lacks the required permissions"
+
+The token exists but was created with insufficient scope. Vercel tokens need **Full Account** scope to read deployments. Delete the token and create a new one with the correct scope.
+
+### "Resource not found — check the deploy hook URL and team ID"
+
+Either the deploy hook URL is incorrect, or the project belongs to a Vercel team and the **Team ID** field is missing from the deploy target. Find your Team ID at **Vercel → Settings → General → Team ID** (starts with `team_`) and add it to the deploy target via the edit menu.
+
+### "Rate limit reached"
+
+The plugin is making too many API calls at once (common when many targets are all actively building). Wait a few seconds — polling will resume automatically.
+
+### Deploy triggers but status never updates
+
+This usually means the token is missing. The plugin can trigger deploys via hook URL without a token, but it needs an API token to read back deployment status. Connect a token using the button in the top-right of the Deploy tab.
+
+### Commit SHA does not link to GitHub
+
+The SHA link requires Vercel to return GitHub repo metadata with the deployment. This is present on deployments triggered by GitHub pushes but not on manually triggered hook deploys. Manually triggered deploys will show the SHA as plain text with a tooltip.
+
+### No error logs shown after a failed build
+
+If "No stderr or stdout was captured" appears, the build may have failed before producing log output, or the events API returned no lines. Use **Open in Vercel** to view the full build log in the Vercel dashboard.
 
 ---
 

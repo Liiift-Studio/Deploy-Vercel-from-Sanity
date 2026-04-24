@@ -1,5 +1,5 @@
 // URL parsing and time formatting utilities
-import type { VercelDeployState } from '../types'
+import type { VercelDeployment, VercelDeployState } from '../types'
 
 /**
  * Extracts projectId and hookId from a Vercel deploy hook URL.
@@ -83,6 +83,17 @@ export function stateLabel(state: VercelDeployState | undefined): {
 		case 'LOADING':      return { label: 'Loading…',     tone: 'default' }
 		default:             return { label: 'Unknown',      tone: 'default' }
 	}
+}
+
+/**
+ * Constructs a GitHub commit URL from deployment meta fields.
+ * Returns null if the required repo or SHA info is not present.
+ */
+export function githubCommitHref(meta: VercelDeployment['meta']): string | null {
+	if (!meta?.githubCommitSha) return null
+	const repo = meta.githubRepo ?? null
+	if (!repo) return null
+	return `https://github.com/${repo}/commit/${meta.githubCommitSha}`
 }
 
 /**

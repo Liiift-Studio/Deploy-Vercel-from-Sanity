@@ -2,14 +2,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
 	Card, Box, Stack, Flex, Text, Button, Tooltip, Badge, Spinner,
-	MenuButton, Menu, MenuItem, Code,
+	MenuButton, Menu, MenuItem, Code, useToast,
 } from '@sanity/ui'
 import {
 	ClockIcon, TrashIcon, EllipsisVerticalIcon, LaunchIcon,
 	CopyIcon, CheckmarkIcon, WarningOutlineIcon, ChevronDownIcon, ChevronUpIcon, EditIcon, SchemaIcon
 } from '@sanity/icons'
 import { listDeployments, cancelDeployment, triggerDeploy, getDeploymentEvents } from '../lib/api'
-import { parseHookUrl, isActiveState, formatDuration, timeAgo, shortSha, safeHref, projectHref } from '../lib/helpers'
+import { parseHookUrl, isActiveState, formatDuration, timeAgo, shortSha, safeHref, projectHref, githubCommitHref } from '../lib/helpers'
 import { StatusBadge } from './StatusBadge'
 import { DeployHistory } from './DeployHistory'
 import type { DeployTarget, VercelDeployment } from '../types'
@@ -26,6 +26,7 @@ interface DeployItemProps {
 
 export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps) {
 	const { projectId, hookId } = parseHookUrl(target.url)
+	const toast = useToast()
 
 	const [deployments, setDeployments]      = useState<VercelDeployment[]>([])
 	const [loadingInitial, setLoadingInitial] = useState(true)
@@ -68,6 +69,23 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 	useEffect(() => {
 		if (triggering && latest && latest.state !== undefined) setTriggering(false)
 	}, [triggering, latest])
+
+	// ── Deploy-complete toast ─────────────────────────────────────────────────
+	const prevStateRef = useRef<string | undefined>(undefined)
+	useEffect(() => {
+		const current = latest?.state
+		const prev = prevStateRef.current
+		if (prev && isActiveState(prev as never) && current && !isActiveState(current as never)) {
+			if (current === 'READY') {
+				toast.push({ status: 'success', title: `${target.name} deployed`, description: 'Build completed successfully' })
+			} else if (current === 'ERROR') {
+				toast.push({ status: 'error', title: `${target.name} failed`, description: 'Build encountered an error — check error details' })
+			} else if (current === 'CANCELED') {
+				toast.push({ status: 'warning', title: `${target.name} canceled`, description: 'Deployment was canceled' })
+			}
+		}
+		prevStateRef.current = current
+	}, [latest?.state, target.name, toast])
 
 	useEffect(() => {
 		setShowErrorLogs(false)
@@ -119,11 +137,13 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 
 	const copyUrl = useCallback(() => {
 		if (!latest?.url) return
-		navigator.clipboard.writeText(`https://${latest.url}`).then(() => {
+		const fullUrl = `https://${latest.url}`
+		navigator.clipboard.writeText(fullUrl).then(() => {
 			setCopied(true)
 			setTimeout(() => setCopied(false), 2000)
-		}).catch(err => {
-			console.error('deploy-vercel-from-sanity: clipboard error', err)
+		}).catch(() => {
+			// Clipboard API unavailable — surface the URL for manual copy
+			window.prompt('Copy deployment URL:', fullUrl)
 		})
 	}, [latest?.url])
 
@@ -143,7 +163,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 				.filter(Boolean)
 				.reverse()
 				.slice(-30)
-			setErrorLines(lines.length > 0 ? lines : ['No log output captured.'])
+			setErrorLines(lines.length > 0 ? lines : ['No stderr or stdout was captured for this build. Open the full build log in Vercel for details.'])
 		} catch (err) {
 			setLogError(err instanceof Error ? err.message : 'Failed to load build logs')
 		} finally {
@@ -161,6 +181,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 	const commitMsg        = latest?.meta?.githubCommitMessage?.split('\n')[0]
 	const sha              = shortSha(latest?.meta?.githubCommitSha)
 	const fullSha          = latest?.meta?.githubCommitSha
+	const commitHref       = githubCommitHref(latest?.meta)
 	const creator          = latest?.creator?.username
 	const deployedAt       = latest?.created ? timeAgo(latest.created) : null
 	const vercelProjectUrl = projectHref(latest?.inspectorUrl)
@@ -304,7 +325,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 											</>
 										)}
 
-										{/* Commit SHA — tooltip shows full message */}
+										{/* Commit SHA — links to GitHub if repo info available, tooltip shows full message */}
 										{sha && (
 											<Tooltip
 												content={
@@ -314,13 +335,22 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 												}
 												portal
 											>
-												<Text
-													size={1}
-													muted
-													style={{ cursor: 'default', fontFamily: 'monospace' }}
-												>
-													{sha}
-												</Text>
+												{commitHref ? (
+													<a
+														href={commitHref}
+														target="_blank"
+														rel="noreferrer"
+														style={{ color: 'inherit', textDecoration: 'none' }}
+													>
+														<Text size={1} muted style={{ cursor: 'pointer', fontFamily: 'monospace' }}>
+															{sha}
+														</Text>
+													</a>
+												) : (
+													<Text size={1} muted style={{ cursor: 'default', fontFamily: 'monospace' }}>
+														{sha}
+													</Text>
+												)}
 											</Tooltip>
 										)}
 
@@ -399,7 +429,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 														)}
 														{!loadingLogs && !logError && errorLines.length > 0 && (
 															<Stack space={2}>
-																<Box style={{ maxHeight: 240, overflowY: 'auto', fontFamily: 'monospace', fontSize: 11, lineHeight: 1.6 }}>
+																<Box style={{ maxHeight: 240, overflowY: 'auto', fontFamily: 'monospace', fontSize: 13, lineHeight: 1.6 }}>
 																	{errorLines.map((line, i) => (
 																		<Code key={i} size={1} style={{ display: 'block', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
 																			{line}
@@ -445,7 +475,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 								style={{ width: '100%', justifyContent: 'flex-start', borderRadius: 0, cursor: 'pointer' }}
 							/>
 							{showDetails && (
-								<Card tone="primary" padding={3} style={{ borderRadius: 0 }}>
+								<Card tone="primary" padding={3} className="dvfs-accordion-content" style={{ borderRadius: 0, borderTop: '1px solid rgba(128,128,128,0.15)' }}>
 									<Stack space={2}>
 										<Flex gap={2} align="center">
 											<Text size={0} muted weight="semibold" style={{ minWidth: LABEL_WIDTH }}>Project</Text>

@@ -42,6 +42,10 @@ export interface VercelDeployment {
 		githubCommitRef?: string
 		githubCommitSha?: string
 		githubCommitAuthorName?: string
+		/** GitHub repo in "org/repo" format — used to construct commit links */
+		githubRepo?: string
+		/** GitHub org slug — fallback when githubRepo is absent */
+		githubCommitOrg?: string
 	}
 }
 

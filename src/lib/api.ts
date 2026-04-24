@@ -16,8 +16,14 @@ async function vercelFetch<T>(path: string, token: string, init?: RequestInit): 
 		},
 	})
 	if (!res.ok) {
-		const text = await res.text().catch(() => res.statusText)
-		throw new Error(`Vercel API ${res.status}: ${text}`)
+		const hint =
+			res.status === 401 ? ' — token is invalid or expired. Reconnect your API token.' :
+			res.status === 403 ? ' — token lacks the required permissions. Ensure it has Full Account scope.' :
+			res.status === 404 ? ' — resource not found. Check the deploy hook URL and team ID.' :
+			res.status === 429 ? ' — rate limit reached. Wait a moment and try again.' :
+			res.status >= 500  ? ' — Vercel is experiencing issues. Try again shortly.' :
+			''
+		throw new Error(`Vercel API ${res.status}${hint}`)
 	}
 	return res.json() as Promise<T>
 }

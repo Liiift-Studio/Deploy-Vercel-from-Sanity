@@ -114,7 +114,9 @@ export function DeployTargetForm({ initial, onSaved, onClose }: DeployTargetForm
 							onChange={e => setTeamId((e.target as HTMLInputElement).value)}
 							placeholder="team_xxxxxxxx"
 						/>
-						<Text size={0} muted>Required for team-owned Vercel projects.</Text>
+						<Text size={0} muted>
+							Required for team-owned Vercel projects. Find it at Vercel → Settings → General → Team ID (starts with <code>team_</code>).
+						</Text>
 					</Stack>
 
 					{/* Disable delete */}
