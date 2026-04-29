@@ -1,6 +1,5 @@
 // Per-deploy-target card — shows status, build timer, history, cancel, deploy, copy URL, and error logs
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { flushSync } from 'react-dom'
 import {
 	Card, Box, Stack, Flex, Text, Button, Tooltip, Badge, Spinner,
 	MenuButton, Menu, MenuItem, Code, useToast,
@@ -111,16 +110,18 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 	}, [isActive, latest?.created])
 
 	// ── Actions ───────────────────────────────────────────────────────────────
-	const deploy = useCallback(async () => {
+	const deploy = useCallback(() => {
 		setDeployError(null)
-		flushSync(() => setTriggering(true))
-		try {
-			await triggerDeploy(target.url)
-			setTimeout(fetchDeployments, 2000)
-		} catch (err) {
-			setTriggering(false)
-			setDeployError(err instanceof Error ? err.message : 'Deploy failed')
-		}
+		setTriggering(true)
+		void (async () => {
+			try {
+				await triggerDeploy(target.url)
+				setTimeout(fetchDeployments, 2000)
+			} catch (err) {
+				setTriggering(false)
+				setDeployError(err instanceof Error ? err.message : 'Deploy failed')
+			}
+		})()
 	}, [target.url, fetchDeployments])
 
 	const cancel = useCallback(async () => {
@@ -217,7 +218,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 											{triggering ? (
 												<Badge tone="caution" padding={2}>Triggering…</Badge>
 											) : (
-												<StatusBadge state={latest?.state} showSpinner />
+												<StatusBadge state={latest?.state} />
 											)}
 											{isActiveState(latest?.state) && (
 												<Button
@@ -231,7 +232,10 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 												/>
 											)}
 											{isActive && elapsed > 0 ? (
-												<Text size={1} muted>{formatDuration(elapsed)}</Text>
+												<Flex align="center" gap={1}>
+													<Spinner muted />
+													<Text size={1} muted>{formatDuration(elapsed)}</Text>
+												</Flex>
 											) : (!isActive && deployedAt) ? (
 												<Text size={1} muted>{deployedAt}</Text>
 											) : null}
@@ -354,7 +358,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 
 										{/* Build duration — only shown when READY and ready timestamp is available */}
 										{latest?.state === 'READY' && latest.ready && latest.created && (
-											<Text size={1} muted>· {formatDuration(Math.floor((latest.ready - latest.created) / 1000))}</Text>
+											<Text size={1} muted>Took {formatDuration(Math.floor((latest.ready - latest.created) / 1000))} to build</Text>
 										)}
 
 										{/* Visit link + copy URL */}
