@@ -31,6 +31,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 	const [deployments, setDeployments]      = useState<VercelDeployment[]>([])
 	const [loadingInitial, setLoadingInitial] = useState(true)
 	const [triggering, setTriggering]        = useState(false)
+	const [clicked, setClicked]              = useState(false)
 	const [canceling, setCanceling]          = useState(false)
 	const [deployError, setDeployError]      = useState<string | null>(null)
 	const [showHistory, setShowHistory]      = useState(false)
@@ -69,6 +70,11 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 	useEffect(() => {
 		if (triggering && latest && latest.state !== undefined) setTriggering(false)
 	}, [triggering, latest])
+
+	// Clear clicked once triggering has propagated — loading animation takes over
+	useEffect(() => {
+		if (triggering) setClicked(false)
+	}, [triggering])
 
 	// ── Deploy-complete toast ─────────────────────────────────────────────────
 	const prevStateRef = useRef<string | undefined>(undefined)
@@ -112,6 +118,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 	// ── Actions ───────────────────────────────────────────────────────────────
 	const deploy = useCallback(() => {
 		setDeployError(null)
+		setClicked(true)
 		setTriggering(true)
 		void (async () => {
 			try {
@@ -119,6 +126,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 				setTimeout(fetchDeployments, 2000)
 			} catch (err) {
 				setTriggering(false)
+				setClicked(false)
 				setDeployError(err instanceof Error ? err.message : 'Deploy failed')
 			}
 		})()
@@ -233,7 +241,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 											)}
 											{isActive && elapsed > 0 ? (
 												<Flex align="center" gap={1}>
-													<Spinner muted />
+													<Spinner muted style={{ marginLeft: 4 }} />
 													<Text size={1} muted>{formatDuration(elapsed)}</Text>
 												</Flex>
 											) : (!isActive && deployedAt) ? (
@@ -560,7 +568,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 							text="Deploy"
 							tone="primary"
 							loading={triggering}
-							disabled={isActive}
+							disabled={isActive || clicked}
 							onClick={deploy}
 							style={{
 								flex: 1,
