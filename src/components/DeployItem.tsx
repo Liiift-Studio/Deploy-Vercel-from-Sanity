@@ -231,10 +231,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 												/>
 											)}
 											{isActive && elapsed > 0 ? (
-												<Flex align="center" gap={1}>
-													<Spinner muted />
-													<Text size={1} muted>{formatDuration(elapsed)}</Text>
-												</Flex>
+												<Text size={1} muted>{formatDuration(elapsed)}</Text>
 											) : (!isActive && deployedAt) ? (
 												<Text size={1} muted>{deployedAt}</Text>
 											) : null}
@@ -354,6 +351,11 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 
 										{/* Creator */}
 										{creator && <Text size={1} muted>by {creator}</Text>}
+
+										{/* Build duration — only shown when READY and ready timestamp is available */}
+										{latest?.state === 'READY' && latest.ready && latest.created && (
+											<Text size={1} muted>· {formatDuration(Math.floor((latest.ready - latest.created) / 1000))}</Text>
+										)}
 
 										{/* Visit link + copy URL */}
 										{latest?.url && latest.state === 'READY' && (

@@ -28,8 +28,10 @@ export interface VercelDeployment {
 	/** Preview hostname, e.g. my-project-abc123.vercel.app */
 	url: string
 	state: VercelDeployState
-	/** Unix ms timestamp */
+	/** Unix ms timestamp — when the deployment was created */
 	created: number
+	/** Unix ms timestamp — when the deployment became ready */
+	ready?: number
 	/** Link to the Vercel dashboard page for this deployment */
 	inspectorUrl?: string
 	creator?: {
