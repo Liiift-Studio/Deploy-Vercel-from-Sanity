@@ -1,5 +1,6 @@
 // Per-deploy-target card — shows status, build timer, history, cancel, deploy, copy URL, and error logs
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { flushSync } from 'react-dom'
 import {
 	Card, Box, Stack, Flex, Text, Button, Tooltip, Badge, Spinner,
 	MenuButton, Menu, MenuItem, Code, useToast,
@@ -112,7 +113,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 	// ── Actions ───────────────────────────────────────────────────────────────
 	const deploy = useCallback(async () => {
 		setDeployError(null)
-		setTriggering(true)
+		flushSync(() => setTriggering(true))
 		try {
 			await triggerDeploy(target.url)
 			setTimeout(fetchDeployments, 2000)
@@ -214,10 +215,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 									{token && !loadingInitial && (
 										<>
 											{triggering ? (
-												<Flex align="center" gap={1}>
-													<Spinner muted />
-													<Badge tone="caution" padding={2}>Triggering…</Badge>
-												</Flex>
+												<Badge tone="caution" padding={2}>Triggering…</Badge>
 											) : (
 												<StatusBadge state={latest?.state} showSpinner />
 											)}
