@@ -562,7 +562,6 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 						<Button
 							text="Deploy"
 							tone="primary"
-							loading={triggering}
 							disabled={isActive}
 							onClick={deploy}
 							style={{
