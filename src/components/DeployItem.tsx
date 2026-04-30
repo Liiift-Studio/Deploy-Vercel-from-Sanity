@@ -1,5 +1,6 @@
 // Per-deploy-target card — shows status, build timer, history, cancel, deploy, copy URL, and error logs
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { flushSync } from 'react-dom'
 import {
 	Card, Box, Stack, Flex, Text, Button, Tooltip, Badge, Spinner,
 	MenuButton, Menu, MenuItem, Code, useToast,
@@ -111,8 +112,10 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 
 	// ── Actions ───────────────────────────────────────────────────────────────
 	const deploy = useCallback(() => {
-		setDeployError(null)
-		setTriggering(true)
+		flushSync(() => {
+			setDeployError(null)
+			setTriggering(true)
+		})
 		void (async () => {
 			try {
 				await triggerDeploy(target.url)
