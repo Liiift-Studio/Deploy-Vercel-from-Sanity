@@ -31,7 +31,6 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 	const [deployments, setDeployments]      = useState<VercelDeployment[]>([])
 	const [loadingInitial, setLoadingInitial] = useState(true)
 	const [triggering, setTriggering]        = useState(false)
-	const [clicked, setClicked]              = useState(false)
 	const [canceling, setCanceling]          = useState(false)
 	const [deployError, setDeployError]      = useState<string | null>(null)
 	const [showHistory, setShowHistory]      = useState(false)
@@ -71,12 +70,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 		if (triggering && latest && latest.state !== undefined) setTriggering(false)
 	}, [triggering, latest])
 
-	// Clear clicked once triggering has propagated — loading animation takes over
-	useEffect(() => {
-		if (triggering) setClicked(false)
-	}, [triggering])
-
-	// ── Deploy-complete toast ─────────────────────────────────────────────────
+	//── Deploy-complete toast ─────────────────────────────────────────────────
 	const prevStateRef = useRef<string | undefined>(undefined)
 	useEffect(() => {
 		const current = latest?.state
@@ -118,7 +112,6 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 	// ── Actions ───────────────────────────────────────────────────────────────
 	const deploy = useCallback(() => {
 		setDeployError(null)
-		setClicked(true)
 		setTriggering(true)
 		void (async () => {
 			try {
@@ -126,7 +119,6 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 				setTimeout(fetchDeployments, 2000)
 			} catch (err) {
 				setTriggering(false)
-				setClicked(false)
 				setDeployError(err instanceof Error ? err.message : 'Deploy failed')
 			}
 		})()
@@ -568,7 +560,7 @@ export function DeployItem({ target, token, onDelete, onEdit }: DeployItemProps)
 							text="Deploy"
 							tone="primary"
 							loading={triggering}
-							disabled={isActive || clicked}
+							disabled={isActive}
 							onClick={deploy}
 							style={{
 								flex: 1,
